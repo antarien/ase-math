@@ -70,10 +70,25 @@ struct Vec3 {
         return x * x + y * y + z * z;
     }
 
+    // Length in XZ plane (horizontal distance)
+    float length_xz() const {
+        return std::sqrt(x * x + z * z);
+    }
+
+    float length_xz_squared() const {
+        return x * x + z * z;
+    }
+
     // Normalize
     Vec3 normalized() const {
         const float len = length();
         return len > 0 ? (*this / len) : Vec3{};
+    }
+
+    // Normalize in XZ plane only (y becomes 0)
+    Vec3 normalized_xz() const {
+        const float len = length_xz();
+        return len > 0 ? Vec3{x / len, 0, z / len} : Vec3{};
     }
 
     // Distance

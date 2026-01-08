@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ase/math/math.hpp>
 #include <ase/math/vec3.hpp>
 #include <cmath>
 
@@ -16,9 +17,7 @@ namespace ase::math {
  *   Y is UP (vertical axis)
  */
 
-constexpr float PI = 3.14159265358979323846f;
-constexpr float TWO_PI = 2.0f * PI;
-constexpr float HALF_PI = PI / 2.0f;
+// PI, TWO_PI, HALF_PI defined in math.hpp
 
 /**
  * Convert spherical coordinates to cartesian (Vec3)

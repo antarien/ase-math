@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.20)
-project(ase-math VERSION 0.1.0 LANGUAGES CXX)
 
 #[[
 ASE FOUNDATION BUILD CONFIGURATION
@@ -11,9 +10,9 @@ ASE FOUNDATION BUILD CONFIGURATION
 
 @module      ase-math
 @layer       0 (Foundation)
-@created     2025-01-01
-@modified    2025-01-30
-@version     1.0.0
+@created     2025-12-15
+@modified    2026-01-30
+@version     00.00.11.00011 [poc]
 
 CMAKE MODULE COMPLIANCE
 
@@ -28,6 +27,30 @@ CMAKE MODULE COMPLIANCE
 [ ] include(GNUInstallDirs) for installation
 [ ] install(DIRECTORY include/ ...) for headers
 ]]
+
+# Parse local VERSION (SSOT) if not building from root
+if(NOT DEFINED ASE_MATH_VERSION)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+        message(FATAL_ERROR "VERSION file not found: ${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+    endif()
+    file(STRINGS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" _VERSION_LINES)
+    foreach(_LINE ${_VERSION_LINES})
+        if(_LINE MATCHES "^ASE_MATH=(.*)$")
+            set(ASE_MATH_VERSION "${CMAKE_MATCH_1}")
+        endif()
+    endforeach()
+    if(NOT DEFINED ASE_MATH_VERSION)
+        message(FATAL_ERROR "ASE_MATH version not found in VERSION file")
+    endif()
+endif()
+
+project(ase-math VERSION ${ASE_MATH_VERSION} LANGUAGES CXX)
+
+# ==============================================================================
+# BUILD CONFIGURATION
+# ==============================================================================
+
+
 
 message(STATUS "Configuring ${PROJECT_NAME} v${PROJECT_VERSION}")
 
@@ -57,3 +80,7 @@ install(TARGETS ${PROJECT_NAME}
 install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
+
+if(ASE_BUILD_TESTS AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+    add_subdirectory(tests)
+endif()

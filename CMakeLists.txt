@@ -65,7 +65,57 @@ message(STATUS "Configuring ${PROJECT_NAME} v${PROJECT_VERSION}")
 HEADER-ONLY LIBRARY
 Mathematical functions: Vec2, Vec3, Mat4, noise, lerp, clamp, etc.
 ]]
-add_library(${PROJECT_NAME} INTERFACE)
+add_library(${PROJECT_NAME} INTERFACE
+    #[[
+    CORE
+    Main mathematical functions and entry point.
+    ]]
+    include/ase/math/math.hpp
+
+    #[[
+    VECTORS
+    Vector types for 2D and 3D operations.
+    ]]
+    include/ase/math/vec3.hpp
+
+    #[[
+    COLORS
+    Color types and operations.
+    ]]
+    include/ase/math/color3.hpp
+
+    #[[
+    QUATERNION
+    Quaternion type for rotations.
+    ]]
+    include/ase/math/quaternion.hpp
+
+    #[[
+    GEOMETRY
+    Geometric primitives and operations.
+    ]]
+    include/ase/math/geometry.hpp
+    include/ase/math/polygon.hpp
+    include/ase/math/spherical.hpp
+
+    #[[
+    INTERPOLATION
+    Interpolation functions (lerp, slerp, etc.).
+    ]]
+    include/ase/math/interpolation.hpp
+
+    #[[
+    NOISE
+    Noise generation functions.
+    ]]
+    include/ase/math/perlin.hpp
+
+    #[[
+    RANDOM
+    Random number generation utilities.
+    ]]
+    include/ase/math/random.hpp
+)
 add_library(ase::math ALIAS ${PROJECT_NAME})
 
 target_include_directories(${PROJECT_NAME}

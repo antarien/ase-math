@@ -10,7 +10,7 @@ Part of [ASE - Antares Simulation Engine](../../..)
 
 ## Overview
 
-`ase-math` provides foundational mathematical types and functions optimized for planetary-scale simulations. All components are header-only, constexpr-friendly, and designed for high performance in real-time physics, rendering, and procedural generation.
+`ase-math` provides foundational mathematical types and functions optimized for planetary-scale simulations where double-precision coordinates span millions of meters while local calculations use fast single-precision float. All components are header-only, constexpr-friendly, and designed for high performance in real-time physics, rendering, and procedural generation. The module provides Vec2, Vec3, Vec4, Mat3, Mat4, and Quat types with SIMD-friendly memory layout, replacing std::min, std::max, and std::clamp with ASE-specific implementations that are explicitly allowed in components (std:: math functions are forbidden in ECS code). Noise functions (Perlin, Simplex, multi-octave fractal) power the terrain generation pipeline, while interpolation utilities (lerp, slerp, smoothstep, ease curves) drive animation and transition systems. Trigonometric wrappers provide degree/radian conversion, fast approximations for physics ticks, and precise implementations for orbital calculations in the ephemeris module. As a Layer 0 foundation library with zero ASE dependencies, ase-math is imported by virtually every module in the engine — it is the mathematical vocabulary that all simulation code speaks.
 
 ## Features
 

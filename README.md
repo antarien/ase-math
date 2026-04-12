@@ -31,7 +31,7 @@ Part of [ASE - Antares Simulation Engine](../../..)
 
 ```cmake
 # Add to your CMakeLists.txt
-add_subdirectory(core/foundation/ase-math)
+add_subdirectory(foundation/ase-math)
 target_link_libraries(your_target PRIVATE ase-math)
 ```
 

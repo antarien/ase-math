@@ -39,10 +39,12 @@
 #   stable = Production ready (set manually)
 #
 # ==============================================================================
-ASE_MATH=00.00.21.00021
+
+ASE_MATH=00.00.22.00022
 ASE_MATH_NAME=Math Library
 ASE_MATH_DESC=Vector, matrix, noise, interpolation functions
 ASE_MATH_LAYER=0
 ASE_MATH_STATUS=init
 ASE_MATH_CREATED=2025-12-15
-ASE_MATH_UPDATED=2026-05-06
+ASE_MATH_UPDATED=2026-06-03
+

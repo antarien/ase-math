@@ -97,6 +97,7 @@ add_library(${PROJECT_NAME} INTERFACE
     include/ase/math/geometry.hpp
     include/ase/math/polygon.hpp
     include/ase/math/spherical.hpp
+    include/ase/math/hexgrid.hpp
 
     #[[
     INTERPOLATION

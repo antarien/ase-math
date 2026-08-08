@@ -109,6 +109,13 @@ inline Vec3 operator*(float scalar, const Vec3& v) {
     return v * scalar;
 }
 
+// Component factory. The operators above are members, so an expression like a + b has no
+// counterpart in a language without operator overloading; code that has to survive the C++ to
+// TypeScript transpiler spells the same arithmetic as vec3(a.x + b.x, a.y + b.y, a.z + b.z).
+inline Vec3 vec3(float x, float y, float z) {
+    return Vec3{x, y, z};
+}
+
 inline float dot(const Vec3& a, const Vec3& b) {
     return a.dot(b);
 }

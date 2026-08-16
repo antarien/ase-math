@@ -1,7 +1,23 @@
 #pragma once
 
-#include <cmath>
-#include <algorithm>
+/**
+ * ASE FOUNDATION HEADER
+ *
+ * @file        color3.hpp
+ * @brief       Color3 - three-component linear RGB colour value
+ * @description Component-wise arithmetic, clamping to the unit range, perceived luminance and
+ *              linear interpolation. Header-only and stateless; clamping goes through
+ *              ase::math::clamp rather than std::clamp.
+ *
+ * @module      ase-math
+ * @layer       0 (Foundation)
+ * @category    process/computation/algorithm
+ * @created     2025-12-17
+ * @modified    2026-08-15
+ * @version     1.0.0
+ */
+
+#include <ase/math/math.hpp>
 
 namespace ase::math {
 
@@ -54,9 +70,9 @@ struct Color3 {
     // Clamp to [0, 1]
     Color3 clamped() const {
         return {
-            std::clamp(r, 0.0f, 1.0f),
-            std::clamp(g, 0.0f, 1.0f),
-            std::clamp(b, 0.0f, 1.0f)
+            ase::math::clamp(r, 0.0f, 1.0f),
+            ase::math::clamp(g, 0.0f, 1.0f),
+            ase::math::clamp(b, 0.0f, 1.0f)
         };
     }
 

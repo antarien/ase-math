@@ -1,5 +1,24 @@
 #pragma once
 
+/**
+ * ASE FOUNDATION HEADER
+ *
+ * @file        quaternion.hpp
+ * @brief       Quaternion rotation type with axis-angle, Euler and slerp construction
+ * @description Unit-quaternion rotation representation free of gimbal lock, plus vector
+ *              rotation, spherical interpolation and yaw/pitch extraction. Header-only and
+ *              stateless; every transcendental call goes through the ase::math wrappers in
+ *              math.hpp rather than std:: directly.
+ *
+ * @module      ase-math
+ * @layer       0 (Foundation)
+ * @category    process/computation/algorithm
+ * @created     2025-12-16
+ * @modified    2026-08-15
+ * @version     1.0.0
+ */
+
+#include <ase/math/math.hpp>
 #include <ase/math/vec3.hpp>
 #include <cmath>
 
@@ -23,19 +42,19 @@ struct Quaternion {
     // Create from axis-angle
     static Quaternion from_axis_angle(const Vec3& axis, float angle) {
         const float half = angle * 0.5f;
-        const float s = std::sin(half);
+        const float s = ase::math::sin(half);
         const Vec3 n = axis.normalized();
-        return {std::cos(half), n.x * s, n.y * s, n.z * s};
+        return {ase::math::cos(half), n.x * s, n.y * s, n.z * s};
     }
 
     // Create from Euler angles (yaw, pitch, roll in radians)
     static Quaternion from_euler(float yaw, float pitch, float roll) {
-        const float cy = std::cos(yaw * 0.5f);
-        const float sy = std::sin(yaw * 0.5f);
-        const float cp = std::cos(pitch * 0.5f);
-        const float sp = std::sin(pitch * 0.5f);
-        const float cr = std::cos(roll * 0.5f);
-        const float sr = std::sin(roll * 0.5f);
+        const float cy = ase::math::cos(yaw * 0.5f);
+        const float sy = ase::math::sin(yaw * 0.5f);
+        const float cp = ase::math::cos(pitch * 0.5f);
+        const float sp = ase::math::sin(pitch * 0.5f);
+        const float cr = ase::math::cos(roll * 0.5f);
+        const float sr = ase::math::sin(roll * 0.5f);
 
         return {
             cr * cp * cy + sr * sp * sy,
@@ -56,12 +75,12 @@ struct Quaternion {
     }
 
     // Rotate a vector by this quaternion
-    Vec3 rotate(const Vec3& v) const {
-        // q * v * q^-1 optimized
+    Vec3 rotate(const Vec3& vec) const {
+        // Rodrigues form of the sandwich product, without building the inverse
         const Vec3 qv{x, y, z};
-        const Vec3 uv = cross(qv, v);
+        const Vec3 uv = cross(qv, vec);
         const Vec3 uuv = cross(qv, uv);
-        return v + ((uv * w) + uuv) * 2.0f;
+        return vec + ((uv * w) + uuv) * 2.0f;
     }
 
     // Conjugate (inverse for unit quaternions)
@@ -71,7 +90,7 @@ struct Quaternion {
 
     // Magnitude
     float magnitude() const {
-        return std::sqrt(w * w + x * x + y * y + z * z);
+        return ase::math::sqrt(w * w + x * x + y * y + z * z);
     }
 
     // Normalize to unit quaternion
@@ -110,10 +129,10 @@ struct Quaternion {
             }.normalized();
         }
 
-        const float theta = std::acos(d);
-        const float sin_theta = std::sin(theta);
-        const float wa = std::sin((1.0f - t) * theta) / sin_theta;
-        const float wb = std::sin(t * theta) / sin_theta;
+        const float theta = ase::math::acos(d);
+        const float sin_theta = ase::math::sin(theta);
+        const float wa = ase::math::sin((1.0f - t) * theta) / sin_theta;
+        const float wb = ase::math::sin(t * theta) / sin_theta;
 
         return {
             wa * a.w + wb * target.w,
@@ -140,16 +159,18 @@ struct Quaternion {
 
     // Get yaw angle (rotation around Y axis)
     float yaw() const {
-        return std::atan2(2.0f * (w * y + x * z), 1.0f - 2.0f * (y * y + x * x));
+        return ase::math::atan2(2.0f * (w * y + x * z), 1.0f - 2.0f * (y * y + x * x));
     }
 
     // Get pitch angle (rotation around X axis)
     float pitch() const {
         const float sinp = 2.0f * (w * x - z * y);
-        if (std::abs(sinp) >= 1.0f) {
-            return std::copysign(3.14159265f / 2.0f, sinp);
+        // At the poles the sine saturates and asin loses its sign; clamp to +/- 90 degrees
+        // using HALF_PI from math.hpp instead of a literal.
+        if (ase::math::abs(sinp) >= 1.0f) {
+            return std::copysign(HALF_PI, sinp);
         }
-        return std::asin(sinp);
+        return ase::math::asin(sinp);
     }
 };
 

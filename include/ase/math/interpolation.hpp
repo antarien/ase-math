@@ -1,5 +1,22 @@
 #pragma once
 
+/**
+ * ASE FOUNDATION HEADER
+ *
+ * @file        interpolation.hpp
+ * @brief       Interpolation and easing helpers shared by every module
+ * @description Linear and smooth interpolation, inverse lerp and remapping between ranges.
+ *              Header-only and stateless; the single source for interpolation so consumer
+ *              systems carry no second implementation.
+ *
+ * @module      ase-math
+ * @layer       0 (Foundation)
+ * @category    process/computation/algorithm
+ * @created     2026-01-08
+ * @modified    2026-08-15
+ * @version     1.0.0
+ */
+
 #include <algorithm>
 #include <cmath>
 

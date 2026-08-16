@@ -4,15 +4,18 @@
  * ASE MATH - RANDOM NUMBER GENERATION
  *
  * @file        random.hpp
- * @brief       Thread-safe random number generation for ECS systems
- * @description Provides deterministic and thread-safe random functions.
- *              Wraps std::random internally - systems use math:: functions only!
+ * @brief       The ASE-native random API used by every system
+ * @description Deterministic-on-demand random floats, integers, booleans and signs. This is
+ *              the contract every module, plugin and server calls; the generator itself and
+ *              every use of the C++ random library live in random_std.hpp, which this header
+ *              includes. Systems use math:: functions only and never reach for <random>.
  *
  * @module      ase-math
  * @layer       0 (Foundation)
+ * @category    process/computation/algorithm
  * @created     2026-01-11
- * @modified    2026-01-11
- * @version     1.0.0
+ * @modified    2026-08-15
+ * @version     2.0.0
  *
  * USAGE IN ECS SYSTEMS:
  *   #include <ase/math/random.hpp>
@@ -22,20 +25,16 @@
  *   uint8_t type = math::random_uint8(0, 3);    // [0, 3]
  *
  * THREAD SAFETY:
- *   All functions use thread_local RNG - safe for parallel systems!
+ *   The generator behind these calls is per-thread — see random_std.hpp, where that property
+ *   is stated and kept. Nothing here shares state between threads.
  */
 
-#include <random>
+// The delegation layer: generator, seeding and distributions.
+#include <ase/math/random_std.hpp>
+
 #include <cstdint>
 
 namespace ase::math {
-
-namespace detail {
-
-// Thread-local random generator (hidden from ECS code)
-inline thread_local std::mt19937 g_rng{std::random_device{}()};
-
-}  // namespace detail
 
 // =============================================================================
 // RANDOM FLOAT FUNCTIONS
@@ -45,16 +44,14 @@ inline thread_local std::mt19937 g_rng{std::random_device{}()};
  * @brief Generate random float in [0.0, 1.0)
  */
 inline float random_float() {
-    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
-    return dist(detail::g_rng);
+    return detail::draw_float(0.0f, 1.0f);
 }
 
 /**
  * @brief Generate random float in [min, max)
  */
 inline float random_float(float min_val, float max_val) {
-    std::uniform_real_distribution<float> dist(min_val, max_val);
-    return dist(detail::g_rng);
+    return detail::draw_float(min_val, max_val);
 }
 
 // =============================================================================
@@ -65,32 +62,28 @@ inline float random_float(float min_val, float max_val) {
  * @brief Generate random int in [min, max] (inclusive!)
  */
 inline int random_int(int min_val, int max_val) {
-    std::uniform_int_distribution<int> dist(min_val, max_val);
-    return dist(detail::g_rng);
+    return detail::draw_int(min_val, max_val);
 }
 
 /**
  * @brief Generate random uint8_t in [min, max] (inclusive!)
  */
 inline uint8_t random_uint8(uint8_t min_val, uint8_t max_val) {
-    std::uniform_int_distribution<int> dist(min_val, max_val);
-    return static_cast<uint8_t>(dist(detail::g_rng));
+    return static_cast<uint8_t>(detail::draw_int(min_val, max_val));
 }
 
 /**
  * @brief Generate random uint32_t in [min, max] (inclusive!)
  */
 inline uint32_t random_uint32(uint32_t min_val, uint32_t max_val) {
-    std::uniform_int_distribution<uint32_t> dist(min_val, max_val);
-    return dist(detail::g_rng);
+    return detail::draw_uint32(min_val, max_val);
 }
 
 /**
  * @brief Generate random uint64_t (full range)
  */
 inline uint64_t random_uint64() {
-    std::uniform_int_distribution<uint64_t> dist;
-    return dist(detail::g_rng);
+    return detail::draw_uint64();
 }
 
 // =============================================================================
@@ -101,7 +94,7 @@ inline uint64_t random_uint64() {
  * @brief Seed the random generator (for deterministic testing)
  */
 inline void random_seed(uint32_t seed) {
-    detail::g_rng.seed(seed);
+    detail::reseed(seed);
 }
 
 /**

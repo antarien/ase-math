@@ -1,5 +1,23 @@
 #pragma once
 
+/**
+ * ASE FOUNDATION HEADER
+ *
+ * @file        spherical.hpp
+ * @brief       Spherical and equatorial coordinate conversions
+ * @description Converts between cartesian Vec3 and spherical (phi/theta/radius), plus the
+ *              celestial Right-Ascension/Declination pair used for star positions. Header-only
+ *              and stateless; every trigonometric call goes through the ase::math wrappers in
+ *              math.hpp rather than std:: directly.
+ *
+ * @module      ase-math
+ * @layer       0 (Foundation)
+ * @category    process/computation/algorithm
+ * @created     2025-12-17
+ * @modified    2026-08-15
+ * @version     1.0.0
+ */
+
 #include <ase/math/math.hpp>
 #include <ase/math/vec3.hpp>
 #include <cmath>
@@ -28,11 +46,11 @@ namespace ase::math {
  * @return Cartesian position (x, y, z)
  */
 inline Vec3 spherical_to_cartesian(float phi, float theta, float radius) {
-    const float sin_theta = std::sin(theta);
+    const float sin_theta = ase::math::sin(theta);
     return {
-        radius * sin_theta * std::cos(phi),  // x
-        radius * std::cos(theta),             // y (up)
-        radius * sin_theta * std::sin(phi)   // z
+        radius * sin_theta * ase::math::cos(phi),  // x
+        radius * ase::math::cos(theta),            // y (up)
+        radius * sin_theta * ase::math::sin(phi)   // z
     };
 }
 
@@ -58,7 +76,7 @@ inline Spherical cartesian_to_spherical(const Vec3& v) {
     }
 
     const float theta = std::acos(v.y / radius);  // 0 to PI
-    const float phi = std::atan2(v.z, v.x);       // -PI to PI
+    const float phi = ase::math::atan2(v.z, v.x); // -PI to PI
 
     return {
         phi < 0 ? phi + TWO_PI : phi,  // Normalize to 0 to 2*PI

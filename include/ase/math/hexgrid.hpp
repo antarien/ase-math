@@ -27,6 +27,7 @@
  *
  * @module      ase-math
  * @layer       0 (Foundation)
+ * @category    process/computation/algorithm
  * @created     2026-07-30
  * @modified    2026-08-06
  * @version     2.0.0

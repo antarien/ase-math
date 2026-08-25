@@ -116,6 +116,13 @@ add_library(${PROJECT_NAME} INTERFACE
     Random number generation utilities.
     ]]
     include/ase/math/random.hpp
+    include/ase/math/random_std.hpp
+
+    #[[
+    SCALARS
+    Scalar helpers the vector and interpolation headers build on.
+    ]]
+    include/ase/math/scalar.hpp
 )
 add_library(ase::math ALIAS ${PROJECT_NAME})
 

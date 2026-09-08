@@ -8,7 +8,8 @@
  * @description Layer 0 foundation surface for everything that reads a direction against the
  *              reference ellipsoid: its surface area, the conversion between a geocentric
  *              direction and a geodetic latitude and longitude, the point where a direction
- *              pierces the surface, and the rotation of a vector about an axis.
+ *              pierces the surface, the walk of a local metre offset across the surface, and the
+ *              rotation of a vector about an axis.
  *
  *              THIS HEADER CARRIES NO LATTICE CONSTRUCTION. The planetary hexagon lattice -
  *              icosahedron base, cell addressing, cell ring, neighbourhood, edges, epoch
@@ -29,8 +30,8 @@
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
  * @created     2026-07-30
- * @modified    2026-08-06
- * @version     2.0.0
+ * @modified    2026-09-01
+ * @version     2.1.0
  *
  * DRY / SOLID / SSOT COMPLIANCE:
  * - NO ECS: no registry, no EnTT, no component types in this header
@@ -62,6 +63,25 @@ constexpr float HEXGRID_FLATTENING_MAX = 0.999f;
  * faster and more accurate.
  */
 constexpr float HEXGRID_ECCENTRICITY_EPSILON = 1.0e-9f;
+
+/**
+ * Cosine of latitude below which a place is treated as being AT a pole. It guards the one quotient
+ * that has no meaning there: an eastward metre offset divided by the radius of the parallel it
+ * would travel on. At a pole that parallel has collapsed to a point, every direction is away from
+ * it, and no number of metres east names a different place - the offset is dropped rather than
+ * blown up.
+ *
+ * IT GUARDS THE LATITUDE, NOT A LENGTH, and that distinction is the whole reason for the value.
+ * A guard written as a minimum parallel radius in metres lets the pole itself through: the cosine
+ * of ninety degrees is not zero in single precision but a few times ten to the minus eight, which
+ * still leaves a parallel radius of some tens of centimetres - above any sane millimetre bound,
+ * and small enough to turn one eastward step into tens of thousands of turns around the pole. The
+ * dimensionless form has no such gap, because it tests the quantity that actually vanishes.
+ *
+ * The value is the width of that blind spot in single precision, so a place within roughly a
+ * ten-thousandth of a degree of a pole counts as the pole - a few centimetres of ground.
+ */
+constexpr float HEXGRID_POLE_COS_EPSILON = 1.0e-6f;
 
 // =============================================================================
 // REFERENCE ELLIPSOID PARAMETERS
@@ -226,6 +246,145 @@ inline Vec3 hexgrid_surface_point(const Vec3& direction, float semi_major_axis_m
                                (cos_theta * cos_theta) / (semi_minor * semi_minor));
     const float radius = (inverse > 0.0f) ? (1.0f / inverse) : 0.0f;
     return spherical_to_cartesian(spherical.phi, spherical.theta, radius);
+}
+
+// =============================================================================
+// WALKING THE SURFACE - A LOCAL METRE OFFSET APPLIED TO A PLACE
+// =============================================================================
+
+/**
+ * @brief Geodetic latitude reached by walking a northward metre offset from a place
+ * @param latitude_deg Geodetic latitude of the starting place in degrees, -90 to 90
+ * @param north_m Metres walked along the local meridian, positive towards the north pole
+ * @param semi_major_axis_m Equatorial radius of the reference ellipsoid in metres
+ * @param flattening Flattening of the reference ellipsoid, 0 for a sphere
+ * @return Geodetic latitude of the reached place in degrees, -90 to 90
+ *
+ * THE STEP THAT CLOSES THE WORLD. A mover states its intent as a local tangent offset in metres -
+ * so many east, so many north - and that offset names no place until it is applied to a place ON
+ * the surface. Applied here it is one division: the meridional radius of curvature turns metres
+ * into an angle, exactly as the parallel radius does for the eastward half in the function below.
+ *
+ * THE POLE IS A FOLD, NOT A WALL. A walker who steps past ninety degrees does not stop and is not
+ * clamped: the reflection carries the latitude back down the far side, which is what crossing a
+ * pole physically is. A clamp there would be the same defect as a rejected negative address on a
+ * plane - it turns a place the walker can reach into an edge, and a chain of steps piles up on it
+ * instead of passing through. On a closed surface no place runs out, so no formula here may invent
+ * an edge; that is the whole reason this function exists rather than an offset added to a plane.
+ *
+ * The eastward half of the same step is a SECOND function rather than an output parameter, for the
+ * reason hexgrid_direction_latitude states: an output parameter has no counterpart in the
+ * transpiled client, where the write would be lost silently. The fold is therefore computed on
+ * both sides - the same arithmetic twice, deliberately, because one truth split over two calls is
+ * cheaper than a silent zero on the client.
+ */
+inline float hexgrid_geodetic_step_latitude(float latitude_deg, float north_m,
+                                            float semi_major_axis_m, float flattening) {
+    const float start_deg = clamp(latitude_deg, -90.0f, 90.0f);
+    if (semi_major_axis_m <= 0.0f) {
+        return start_deg;
+    }
+    const float flat = clamp(flattening, 0.0f, HEXGRID_FLATTENING_MAX);
+    const float eccentricity_sq = 2.0f * flat - flat * flat;
+    const float sin_lat = sin(start_deg * DEG_TO_RAD);
+    const float w_sq = 1.0f - eccentricity_sq * sin_lat * sin_lat;
+    if (w_sq <= 0.0f) {
+        return start_deg;
+    }
+    const float meridional_m =
+        semi_major_axis_m * (1.0f - eccentricity_sq) / (w_sq * sqrt(w_sq));
+    if (meridional_m <= 0.0f) {
+        return start_deg;
+    }
+    float walked_deg = start_deg + (north_m / meridional_m) * RAD_TO_DEG;
+    while (walked_deg > 180.0f) {
+        walked_deg -= 360.0f;
+    }
+    while (walked_deg < -180.0f) {
+        walked_deg += 360.0f;
+    }
+    if (walked_deg > 90.0f) {
+        walked_deg = 180.0f - walked_deg;
+    }
+    if (walked_deg < -90.0f) {
+        walked_deg = -180.0f - walked_deg;
+    }
+    return walked_deg;
+}
+
+/**
+ * @brief Geodetic longitude reached by walking a local metre offset from a place
+ * @param latitude_deg Geodetic latitude of the starting place in degrees, -90 to 90
+ * @param longitude_deg Geodetic longitude of the starting place in degrees, -180 to 180
+ * @param east_m Metres walked along the local parallel, positive towards the east
+ * @param north_m Metres walked along the local meridian, positive towards the north pole
+ * @param semi_major_axis_m Equatorial radius of the reference ellipsoid in metres
+ * @param flattening Flattening of the reference ellipsoid, 0 for a sphere
+ * @return Geodetic longitude of the reached place in degrees, -180 to 180
+ *
+ * THE MERIDIAN IS A CIRCLE, SO THIS FUNCTION HAS NO EDGE EITHER. A walker heading east passes the
+ * date line and keeps going; the wrap below is a change of writing, never a stop. That is the
+ * whole difference to a bounded axis, and it is why a settler can circle the world.
+ *
+ * IT TAKES THE NORTHWARD METRES TOO, AND THAT IS NOT A SPARE PARAMETER. Crossing a pole mirrors
+ * the meridian onto the one half a turn away: a walker who goes north over the north pole comes
+ * down heading south on the far side. Without north_m this function cannot know that happened and
+ * would carry the old meridian across, drawing a walker who steps over the pole as if he had
+ * turned around on the spot. The fold is therefore recomputed here rather than handed over - see
+ * hexgrid_geodetic_step_latitude for why two functions and not one with an output parameter.
+ *
+ * AT A POLE THE EASTWARD HALF IS DROPPED, NOT SCALED. The parallel has collapsed to a point there,
+ * so no number of metres east names a different place; dividing by that vanishing radius would
+ * turn a metre into an arbitrary angle. The guard tests the COSINE OF THE LATITUDE and not the
+ * radius it produces, because the radius does not vanish where the latitude does - see
+ * HEXGRID_POLE_COS_EPSILON for the gap that a metre-sized bound leaves open at the pole itself.
+ */
+inline float hexgrid_geodetic_step_longitude(float latitude_deg, float longitude_deg, float east_m,
+                                             float north_m, float semi_major_axis_m,
+                                             float flattening) {
+    if (semi_major_axis_m <= 0.0f) {
+        return longitude_deg;
+    }
+    const float start_deg = clamp(latitude_deg, -90.0f, 90.0f);
+    const float flat = clamp(flattening, 0.0f, HEXGRID_FLATTENING_MAX);
+    const float eccentricity_sq = 2.0f * flat - flat * flat;
+    const float latitude_rad = start_deg * DEG_TO_RAD;
+    const float sin_lat = sin(latitude_rad);
+    const float cos_lat = cos(latitude_rad);
+    const float w_sq = 1.0f - eccentricity_sq * sin_lat * sin_lat;
+    if (w_sq <= 0.0f) {
+        return longitude_deg;
+    }
+    const float w_term = sqrt(w_sq);
+
+    /* The same fold hexgrid_geodetic_step_latitude walks, restated here to learn ONE fact: did
+     * this step cross a pole. Only the crossing is taken from it, never the latitude itself. */
+    const float meridional_m = semi_major_axis_m * (1.0f - eccentricity_sq) / (w_sq * w_term);
+    float walked_lat_deg = start_deg;
+    if (meridional_m > 0.0f) {
+        walked_lat_deg += (north_m / meridional_m) * RAD_TO_DEG;
+    }
+    while (walked_lat_deg > 180.0f) {
+        walked_lat_deg -= 360.0f;
+    }
+    while (walked_lat_deg < -180.0f) {
+        walked_lat_deg += 360.0f;
+    }
+    const float mirrored_deg =
+        ((walked_lat_deg > 90.0f) || (walked_lat_deg < -90.0f)) ? 180.0f : 0.0f;
+
+    float walked_lon_deg = longitude_deg + mirrored_deg;
+    if (abs(cos_lat) > HEXGRID_POLE_COS_EPSILON) {
+        const float parallel_m = (semi_major_axis_m / w_term) * cos_lat;
+        walked_lon_deg += (east_m / parallel_m) * RAD_TO_DEG;
+    }
+    while (walked_lon_deg > 180.0f) {
+        walked_lon_deg -= 360.0f;
+    }
+    while (walked_lon_deg <= -180.0f) {
+        walked_lon_deg += 360.0f;
+    }
+    return walked_lon_deg;
 }
 
 }  // namespace ase::math

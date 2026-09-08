@@ -1,16 +1,33 @@
 /**
- * Reference Ellipsoid Formula Building Blocks - Unit Tests
+ * =============================================================================
+ * ASE MATH - Reference Ellipsoid Formula Building Blocks Unit Tests
+ * =============================================================================
  *
- * The lattice construction moved to `modules/ase-geoid` (PLAN_ASE_LATTICE.md, Festlegung 6 in
- * ihrer Fassung vom 2026-08-06), and its seven cases moved with it into
- * `modules/ase-geoid/tests/test_geoid.cpp`. What is tested here is what stayed: the ellipsoid and
- * vector formulas this header now consists of.
+ * @file        hexgrid_test.cpp
+ * @brief       Cases for the ellipsoid and vector formulas that stayed in this header.
+ * @description The lattice construction moved to `modules/ase-geoid` (PLAN_ASE_LATTICE.md,
+ *              Festlegung 6 in ihrer Fassung vom 2026-08-06), and its seven cases moved with it
+ *              into `modules/ase-geoid/tests/test_geoid.cpp`. What is tested here is what
+ *              stayed: the ellipsoid and vector formulas this header now consists of.
  *
- * The parameters travel as SCALARS, and the cases below pin what that makes visible: the geodetic
- * conversions take only the flattening, because a direction has no size.
+ *              The parameters travel as SCALARS, and the cases below pin what that makes
+ *              visible: the geodetic conversions take only the flattening, because a direction
+ *              has no size.
  *
- * The doctest main is switched on from tests/CMakeLists.txt rather than from a define here, so
- * this file carries no macro definition of its own.
+ *              The doctest main is switched on from tests/CMakeLists.txt rather than from a
+ *              define here, so this file carries no macro definition of its own.
+ *
+ * -----------------------------------------------------------------------------
+ * META
+ * -----------------------------------------------------------------------------
+ * @module      ase-math
+ * @layer       0 (Foundation)
+ * @category    process/computation/algorithm
+ * @created     2026-08-01
+ * @modified    2026-08-08
+ * @version     1.0.0
+ *
+ * =============================================================================
  */
 
 #include <doctest/doctest.h>

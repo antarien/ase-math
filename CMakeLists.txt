@@ -10,8 +10,9 @@ ASE FOUNDATION BUILD CONFIGURATION
 
 @module      ase-math
 @layer       0 (Foundation)
+@usecase     usecase:100051 - bind a build edge
 @created     2025-12-15
-@modified    2026-09-08
+@modified    2026-10-19
 @version     00.00.24.00024 [init]
 
 CMAKE MODULE COMPLIANCE
@@ -129,6 +130,14 @@ add_library(${PROJECT_NAME} INTERFACE
     Scalar helpers the vector and interpolation headers build on.
     ]]
     include/ase/math/scalar.hpp
+
+    #[[
+    TEXT VECTORS
+    The local embedding (Reasoning Phase 18): a deterministic feature-hashing vector of a text and
+    its cosine - the zero-egress substrate of admission novelty, the semantic cache key and the
+    embedding_distance signal of resolution step 0. Compiled only where it is included.
+    ]]
+    include/ase/math/text_vector.hpp
 )
 add_library(ase::math ALIAS ${PROJECT_NAME})
 

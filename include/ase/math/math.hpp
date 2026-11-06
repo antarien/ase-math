@@ -7,23 +7,26 @@
  * @brief       ase::math - the engine's float math entry point and the one place std:: is called
  * @description The float transcendental and rounding functions of the engine, each a thin
  *              forward to the C++ standard library. This file exists so that no other file has
- *              to: modules, plugins and servers call ase::math::sin, ase::math::pow and their
- *              siblings, and <cmath> is reached through nothing else. The wrapper IS the
- *              relocation of the standard functions to a single place - it does not reimplement
- *              them, and nothing here should ever grow a hand-written substitute for one.
+ *              to: modules, plugins and servers call ase::math::sin, ase::math::pow and the
+ *              other functions here, and <cmath> is reached through nothing else. The wrapper
+ *              IS the relocation of the standard functions to a single place - it does not
+ *              reimplement them, and nothing here should ever grow a hand-written substitute
+ *              for one.
  *
  *              The engine's OWN scalar arithmetic - the angle constants and the generic
- *              abs/min/max/clamp/lerp/sign templates, which forward to nothing - moved to
- *              scalar.hpp on 2026-08-15, so that what the engine DEFINES and what it FORWARDS
- *              are two files. scalar.hpp is included below, so every existing consumer keeps
- *              finding all of ase::math through this header without changing a line.
+ *              abs/min/max/clamp/lerp/sign templates, which forward to nothing - stands in
+ *              scalar.hpp, so that what the engine DEFINES and what it FORWARDS are two files.
+ *              scalar.hpp is included below, so every consumer finds all of ase::math through
+ *              this header.
  *
  * @module      ase-math
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
+ * @usecase     usecase:101541 - compute scalar and vector math
+ * @actor       Math Library Steward (MATHLIBSTE)
  * @created     2025-12-15
- * @modified    2026-08-15
- * @version     2.0.0
+ * @modified    2026-10-30
+ * @version     2.0.1
  *
  * CORE INFRASTRUCTURE COMPLIANCE
  *
@@ -53,9 +56,7 @@
 
 namespace ase::math {
 
-// =============================================================================
-// FLOATING POINT FUNCTIONS - the delegation layer to <cmath>
-// =============================================================================
+// Floating point functions - the delegation layer to <cmath>
 
 inline float sqrt(float value) {
     return std::sqrt(value);

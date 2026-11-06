@@ -13,9 +13,11 @@
  * @module      ase-math
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
+ * @usecase     usecase:101542 - draw engine random numbers
+ * @actor       Random Number Steward (RANDNUMSTE)
  * @created     2026-01-11
- * @modified    2026-08-15
- * @version     2.0.0
+ * @modified    2026-10-30
+ * @version     2.0.1
  *
  * USAGE IN ECS SYSTEMS:
  *   #include <ase/math/random.hpp>
@@ -54,9 +56,7 @@ constexpr uint32_t RANDOM_HASH_NORMAL_KEYS = 2u;        // the normal draw consu
 constexpr float RANDOM_HASH_NORMAL_FLOOR = 1.0f / 16777216.0f;  // lower bound of u1 so log(u1) stays finite
 constexpr float RANDOM_HASH_NORMAL_LOG_FACTOR = -2.0f;  // the -2 of the Box-Muller radius sqrt(-2 ln u1)
 
-// =============================================================================
-// RANDOM FLOAT FUNCTIONS
-// =============================================================================
+// Random float functions
 
 /**
  * @brief Generate random float in [0.0, 1.0)
@@ -72,9 +72,7 @@ inline float random_float(float min_val, float max_val) {
     return detail::draw_float(min_val, max_val);
 }
 
-// =============================================================================
-// RANDOM INTEGER FUNCTIONS
-// =============================================================================
+// Random integer functions
 
 /**
  * @brief Generate random int in [min, max] (inclusive!)
@@ -104,9 +102,7 @@ inline uint64_t random_uint64() {
     return detail::draw_uint64();
 }
 
-// =============================================================================
-// UTILITY FUNCTIONS
-// =============================================================================
+// Utility functions
 
 /**
  * @brief Seed the random generator (for deterministic testing)
@@ -130,16 +126,14 @@ inline float random_sign() {
     return random_bool() ? 1.0f : -1.0f;
 }
 
-// =============================================================================
-// SEEDED HASH FUNCTIONS - the same draw from the same seed on every platform
-// =============================================================================
+// Seeded hash functions - the same draw from the same seed on every platform
 //
 // WHY A SECOND FAMILY. The functions above draw from the per-thread std::mt19937 through the std
 // distributions (random_std.hpp). The generator is specified by the standard, the distributions
 // are not: libstdc++ on the Linux tiers and libc++ in the Android NDK map the same generator words
 // to different floats, and the client port has no seedable generator at all. A shape that must
 // come out the same from the same seed on server, handset and client - a plant grown in
-// ase-phytomer (PLAN_ASE_VIVARIUM_PHASE_03_ASSETS 03.3, Schritt 6) - needs a draw that is plain
+// ase-phytomer (PLAN_ASE_VIVARIUM_PHASE_03_ASSETS 03.3, step 6) - needs a draw that is plain
 // integer arithmetic.
 //
 // THE DRAW IS A FUNCTION OF (seed, key) ALONE. There is no stream and no state to advance: the

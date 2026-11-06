@@ -11,9 +11,11 @@
  * @module      ase-math
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
+ * @usecase     usecase:101541 - compute scalar and vector math
+ * @actor       Math Library Steward (MATHLIBSTE)
  * @created     2026-01-08
- * @modified    2026-08-15
- * @version     1.0.0
+ * @modified    2026-10-30
+ * @version     1.0.1
  */
 
 #include <ase/math/vec3.hpp>
@@ -21,9 +23,7 @@
 
 namespace ase::math {
 
-// =============================================================================
-// AABB (Axis-Aligned Bounding Box)
-// =============================================================================
+// AABB (axis-aligned bounding box)
 
 struct AABB {
     Vec3 min{0, 0, 0};
@@ -60,9 +60,7 @@ struct AABB {
     }
 };
 
-// =============================================================================
-// SPHERE
-// =============================================================================
+// Sphere
 
 struct Sphere {
     Vec3 center{0, 0, 0};
@@ -97,9 +95,7 @@ struct Sphere {
     }
 };
 
-// =============================================================================
-// FREE FUNCTIONS (for consistent interface)
-// =============================================================================
+// Free functions (for a consistent interface)
 
 /**
  * Check if point is inside sphere.

@@ -13,7 +13,11 @@
  * @category    process/computation/algorithm
  * @created     2026-01-08
  * @modified    2026-01-08
- * @version     1.0.0
+ * @version     00.00.26.00026 [init]
+ *
+ * Copyright (c) Jan Ohlmann. All rights reserved.
+ * Licensed to ANTARES SIMULACAO LTDA. Use is governed by LICENSE.md and PJV.md in this repository.
+ * SPDX-License-Identifier: LicenseRef-ASE-LIC
  *
  * DRY / SOLID / SSOT COMPLIANCE:
  * - point_in_polygon() - ONE implementation here

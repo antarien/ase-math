@@ -15,7 +15,11 @@
  * @actor       Math Library Steward (MATHLIBSTE)
  * @created     2026-01-08
  * @modified    2026-10-30
- * @version     1.0.1
+ * @version     00.00.26.00026 [init]
+ *
+ * Copyright (c) Jan Ohlmann. All rights reserved.
+ * Licensed to ANTARES SIMULACAO LTDA. Use is governed by LICENSE.md and PJV.md in this repository.
+ * SPDX-License-Identifier: LicenseRef-ASE-LIC
  */
 
 #include <ase/math/vec3.hpp>

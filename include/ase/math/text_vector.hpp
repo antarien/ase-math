@@ -5,7 +5,7 @@
  *
  * @file        text_vector.hpp
  * @brief       SSOT for the local embedding: a deterministic feature-hashing vector of a text, and its cosine
- * @description PLAN_ASE_REASONING_PHASE_18 Task 18.4 makes a LOCAL embedding a hard dependency: the novelty
+ * @description The reasoning tier makes a LOCAL embedding a hard dependency: the novelty
  *              score of admission, the key of the semantic cache and the embedding_distance signal of
  *              resolution step 0 all need a vector for a text, and computing it with a provider would turn
  *              the zero-egress path into a metered call. This header is that local embedder - pure
@@ -25,12 +25,14 @@
  *              situation needs.
  *
  *              THE DIMENSION. TEXT_VECTOR_DIMS = 1536 is the dimension of the skill-memory vector index
- *              (Phase 3, MEM_VECTOR_DIMS), so a local vector fits the existing Atlas index of
+ *              (MEM_VECTOR_DIMS), so a local vector fits the existing vector search index of
  *              skill_inference_cache without a second index shape.
  *
  * @module      ase-math
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
+ * @usecase     usecase:101541 - compute scalar and vector math
+ * @actor       Math Library Steward (MATHLIBSTE)
  * @created     2026-10-07
  * @modified    2026-10-07
  * @version     00.00.26.00026 [init]

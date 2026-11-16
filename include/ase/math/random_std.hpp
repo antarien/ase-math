@@ -15,6 +15,8 @@
  * @module      ase-math
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
+ * @usecase     usecase:101542 - draw engine random numbers
+ * @actor       Random Number Steward (RANDNUMSTE)
  * @created     2026-08-15
  * @modified    2026-08-15
  * @version     00.00.26.00026 [init]
@@ -36,8 +38,8 @@
  * The std::random ban and the thread_local ban carry no path exclusion, so they fire here —
  * on the definition of the alternative they point callers to, and on the property that makes
  * it safe. That is expected and it is the point of the split: the reports are confined to the
- * file that exists to hold them. Whether the bans should gain an exclusion for this path is an
- * operator decision, not a repair.
+ * file that exists to hold them. Whether the bans gain an exclusion for this path is a question
+ * of the rule set, not of this file.
  */
 
 #include <random>

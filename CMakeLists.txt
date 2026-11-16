@@ -103,10 +103,8 @@ add_library(${PROJECT_NAME} INTERFACE
     include/ase/math/polygon.hpp
     include/ase/math/spherical.hpp
     #[[
-    hexgrid.hpp stand hier bis 2026-09-13 und traegt jetzt modules/ase-geoid als
-    geoid_elps_math.hpp. Einziger Verbraucher im ganzen C++-Baum war ase-geoid, und in
-    foundation/ war die Datei fuer ase-codegen unerreichbar - der Client kam nur ueber eine
-    Handfassung an sie heran. Mit ihr ist tests/ dieses Moduls entfallen; die Faelle stehen als
+    The hexagonal grid math lives in modules/ase-geoid as geoid_elps_math.hpp, next to its only
+    consumer and within reach of ase-codegen. Its test cases stand in
     modules/ase-geoid/tests/test_geoid_elps.cpp.
     ]]
 

@@ -5,15 +5,18 @@
  *
  * @file        vec3.hpp
  * @brief       Vec3 - three-component float vector, the spatial primitive of the engine
- * @description Arithmetic, dot and cross product, length and normalisation, including the
- *              XY-plane variants for the world's horizontal plane (the height axis is Z).
- *              Header-only and stateless; square roots go through ase::math::sqrt.
+ * @description Arithmetic, dot and cross product, the componentwise product, length and
+ *              normalisation, including the XY-plane variants for the world's horizontal plane
+ *              (the height axis is Z). Header-only and stateless; square roots go through
+ *              ase::math::sqrt.
  *
  * @module      ase-math
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
+ * @usecase     usecase:101541 - compute scalar and vector math
+ * @actor       Math Library Steward (MATHLIBSTE)
  * @created     2025-12-15
- * @modified    2026-08-15
+ * @modified    2026-11-19
  * @version     00.00.26.00026 [init]
  *
  * Copyright (c) Jan Ohlmann. All rights reserved.
@@ -96,8 +99,8 @@ struct Vec3 {
      * declares ("SPT_POS_Y: HORIZONTAL AXIS, the second of two - never the height",
      * "SPT_POS_Z: THE HEIGHT AXIS"). A helper that calls sqrt(x*x + z*z) "horizontal distance"
      * therefore mixes ONE horizontal with the HEIGHT and silently drops the other horizontal - and
-     * the normalising twin zeroed y, so a direction taken from it could never point along the
-     * second horizontal at all, while it could point straight up.
+     * the normalising function of that pair zeroed y, so a direction taken from it could never
+     * point along the second horizontal at all, while it could point straight up.
      *
      * The old pair belonged to a y-up world. ase-math still HAS one, deliberately, in
      * spherical.hpp ("Y is UP") - that frame is the planet's own, where y is the pole, and
@@ -166,6 +169,11 @@ inline Vec3 cross(const Vec3& a, const Vec3& b) {
 
 inline Vec3 normalize(const Vec3& v) {
     return v.normalized();
+}
+
+// Componentwise product - a scale per axis, such as one frequency per axis of a noise field
+inline Vec3 mul(const Vec3& a, const Vec3& b) {
+    return Vec3{a.x * b.x, a.y * b.y, a.z * b.z};
 }
 
 } // namespace ase::math

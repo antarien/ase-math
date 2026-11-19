@@ -4,17 +4,39 @@
  * ASE FOUNDATION HEADER
  *
  * @file        perlin.hpp
- * @brief       Perlin - deterministic 2D gradient noise with fBm layering
- * @description Ken Perlin's improved noise in two dimensions, seeded through a small LCG so the
- *              same seed always yields the same field. Suitable for terrain generation. Holds a
- *              512-entry permutation table as a plain C array; floor goes through
- *              ase::math::floor rather than std::floor.
+ * @brief       Perlin - deterministic gradient noise in two and three dimensions, with fBm layering
+ * @description Ken Perlin's improved noise. The class Perlin is the two-dimensional field of the
+ *              terrain, seeded through a small LCG so the same seed always yields the same field;
+ *              it holds a 512-entry permutation table as a plain C array.
+ *
+ *              perlin3 and fbm3_vec are the three-dimensional field of plant growth (the coherent
+ *              deviation of an axis, the bark noise). Their lattice gradient is chosen by
+ *              random_hash_u32 of the corner's integer coordinates instead of a permutation table,
+ *              so the field holds no state and needs no seed object: the caller moves its sample
+ *              point (an axis adds an offset drawn from its seed and lineage).
+ *
+ *              BIT-EQUAL ON LINUX AND ANDROID. perlin3 is integer hashing, floor, addition and
+ *              multiplication and nothing else - no sin, cos or other libm call, whose last bit
+ *              differs between glibc and bionic. Both builds compile with -ffp-contract=off
+ *              (cmake/CompilerFlags.cmake, clients/avt-client-android/CMakeLists.txt), so no
+ *              compiler fuses a product and a sum into one rounding. The coherence of a growing
+ *              plant is simulation, and the same seed must grow the same tree on server and
+ *              handset (PLAN_ASE_VIVARIUM_TREEGEN, "Kohaerente Wuchsabweichung").
+ *
+ *              RANGE OF perlin3. A lattice point yields exactly 0. Between points the value stays
+ *              within plus or minus NOISE3_BOUND, the bound of a three-dimensional gradient field
+ *              whose gradients have length sqrt(2). The integer cell of each coordinate must fit
+ *              into int32_t; world positions in metres lie far inside that.
+ *
+ *              floor goes through ase::math::floor rather than std::floor.
  *
  * @module      ase-math
  * @layer       0 (Foundation)
  * @category    process/computation/algorithm
+ * @usecase     usecase:101541 - compute scalar and vector math
+ * @actor       Math Library Steward (MATHLIBSTE)
  * @created     2025-12-16
- * @modified    2026-08-15
+ * @modified    2026-11-19
  * @version     00.00.26.00026 [init]
  *
  * Copyright (c) Jan Ohlmann. All rights reserved.
@@ -22,7 +44,10 @@
  * SPDX-License-Identifier: LicenseRef-ASE-LIC
  */
 
+#include <ase/math/interpolation.hpp>
 #include <ase/math/math.hpp>
+#include <ase/math/random.hpp>
+#include <ase/math/vec3.hpp>
 
 #include <cstdint>
 
@@ -136,5 +161,121 @@ private:
         return ((h & 1) ? -gu : gu) + ((h & 2) ? -2.0f * gv : 2.0f * gv);
     }
 };
+
+/**
+ * The constants of the three-dimensional field. They are part of the contract like the
+ * RANDOM_HASH_* constants of random.hpp: a changed value is a changed shape of every plant whose
+ * growth reads the field.
+ */
+constexpr uint32_t NOISE3_LATTICE_SEED = 0x2545F491u;  // seed of the lattice hash, fixed: the caller moves the point, never the lattice
+constexpr uint32_t NOISE3_GRADIENT_MASK = 15u;         // four bits of the corner hash pick one of Perlin's sixteen gradient cases
+constexpr uint32_t NOISE3_GRADIENT_SPLIT_U = 8u;       // cases 0..7 take x as first axis, 8..15 take y
+constexpr uint32_t NOISE3_GRADIENT_SPLIT_V = 4u;       // cases 0..3 take y as second axis
+constexpr uint32_t NOISE3_GRADIENT_CASE_X_A = 12u;     // case 12 takes x as second axis (repeats an edge, keeps sixteen cases)
+constexpr uint32_t NOISE3_GRADIENT_CASE_X_B = 14u;     // case 14 takes x as second axis (repeats an edge, keeps sixteen cases)
+constexpr uint32_t NOISE3_GRADIENT_SIGN_U = 1u;        // bit that negates the first axis
+constexpr uint32_t NOISE3_GRADIENT_SIGN_V = 2u;        // bit that negates the second axis
+constexpr float NOISE3_BOUND = 1.22474487f;            // sqrt(3/2): bound of a 3D gradient field with gradient length sqrt(2)
+constexpr Vec3 NOISE3_CHANNEL_OFFSET_Y{31.416f, 47.853f, 12.718f};  // moves the second channel of fbm3_vec off the first, no lattice multiple
+constexpr Vec3 NOISE3_CHANNEL_OFFSET_Z{73.205f, 19.937f, 58.661f};  // moves the third channel off the first two, no lattice multiple
+
+namespace detail {
+
+/**
+ * @brief The 32-bit hash of one lattice corner
+ * @param ix, iy, iz  integer cell coordinates; the cast to uint32_t wraps by definition
+ * @return the mixed word; its low four bits pick the gradient
+ */
+[[nodiscard]] inline uint32_t noise3_corner(int32_t ix, int32_t iy, int32_t iz) noexcept {
+    const uint32_t hx = random_hash_u32(NOISE3_LATTICE_SEED, static_cast<uint32_t>(ix));
+    const uint32_t hy = random_hash_u32(hx, static_cast<uint32_t>(iy));
+    return random_hash_u32(hy, static_cast<uint32_t>(iz));
+}
+
+/**
+ * @brief Dot product of a corner gradient with the offset from that corner
+ *
+ * Perlin's reference choice (Improved Noise, 2002): the twelve edge directions of the cube, four
+ * of them twice, so that four bits select a case without a modulo.
+ */
+[[nodiscard]] inline float noise3_grad(uint32_t hash, float x, float y, float z) noexcept {
+    const uint32_t h = hash & NOISE3_GRADIENT_MASK;
+    const float u = h < NOISE3_GRADIENT_SPLIT_U ? x : y;
+    const bool second_is_x = h == NOISE3_GRADIENT_CASE_X_A || h == NOISE3_GRADIENT_CASE_X_B;
+    const float v = h < NOISE3_GRADIENT_SPLIT_V ? y : (second_is_x ? x : z);
+    const float su = (h & NOISE3_GRADIENT_SIGN_U) != 0u ? -u : u;
+    const float sv = (h & NOISE3_GRADIENT_SIGN_V) != 0u ? -v : v;
+    return su + sv;
+}
+
+}  // namespace detail
+
+/**
+ * @brief Gradient noise at a point in three dimensions
+ * @param p  sample point; one unit is one lattice cell
+ * @return a value within plus or minus NOISE3_BOUND, exactly 0 on every lattice point
+ */
+[[nodiscard]] inline float perlin3(const Vec3& p) noexcept {
+    const float fx = floor(p.x);
+    const float fy = floor(p.y);
+    const float fz = floor(p.z);
+    const int32_t ix = static_cast<int32_t>(fx);
+    const int32_t iy = static_cast<int32_t>(fy);
+    const int32_t iz = static_cast<int32_t>(fz);
+
+    // Offset inside the cell, [0, 1) on each axis, and the same offset seen from the far corner
+    const float x = p.x - fx;
+    const float y = p.y - fy;
+    const float z = p.z - fz;
+    const float x1 = x - 1.0f;
+    const float y1 = y - 1.0f;
+    const float z1 = z - 1.0f;
+
+    const float u = smootherstep(x);
+    const float v = smootherstep(y);
+    const float w = smootherstep(z);
+
+    const float n000 = detail::noise3_grad(detail::noise3_corner(ix, iy, iz), x, y, z);
+    const float n100 = detail::noise3_grad(detail::noise3_corner(ix + 1, iy, iz), x1, y, z);
+    const float n010 = detail::noise3_grad(detail::noise3_corner(ix, iy + 1, iz), x, y1, z);
+    const float n110 = detail::noise3_grad(detail::noise3_corner(ix + 1, iy + 1, iz), x1, y1, z);
+    const float n001 = detail::noise3_grad(detail::noise3_corner(ix, iy, iz + 1), x, y, z1);
+    const float n101 = detail::noise3_grad(detail::noise3_corner(ix + 1, iy, iz + 1), x1, y, z1);
+    const float n011 = detail::noise3_grad(detail::noise3_corner(ix, iy + 1, iz + 1), x, y1, z1);
+    const float n111 = detail::noise3_grad(detail::noise3_corner(ix + 1, iy + 1, iz + 1), x1, y1, z1);
+
+    const float nx00 = lerp(n000, n100, u);
+    const float nx10 = lerp(n010, n110, u);
+    const float nx01 = lerp(n001, n101, u);
+    const float nx11 = lerp(n011, n111, u);
+    const float nxy0 = lerp(nx00, nx10, v);
+    const float nxy1 = lerp(nx01, nx11, v);
+    return lerp(nxy0, nxy1, w);
+}
+
+/**
+ * @brief Fractal sum of three-dimensional gradient noise in three decorrelated channels
+ * @param p           sample point
+ * @param octaves     number of layers; 0 or fewer yields the zero vector
+ * @param rough       amplitude factor from one octave to the next
+ * @param lacunarity  frequency factor from one octave to the next
+ * @return per channel the amplitude-weighted mean of the octaves, so the range of perlin3 holds
+ */
+[[nodiscard]] inline Vec3 fbm3_vec(const Vec3& p, int octaves, float rough, float lacunarity) noexcept {
+    Vec3 sum{};
+    float amplitude = 1.0f;
+    float frequency = 1.0f;
+    float total = 0.0f;
+    for (int octave = 0; octave < octaves; ++octave) {
+        const Vec3 q = p * frequency;
+        sum.x += amplitude * perlin3(q);
+        sum.y += amplitude * perlin3(q + NOISE3_CHANNEL_OFFSET_Y);
+        sum.z += amplitude * perlin3(q + NOISE3_CHANNEL_OFFSET_Z);
+        total += amplitude;
+        amplitude *= rough;
+        frequency *= lacunarity;
+    }
+    return total > 0.0f ? sum / total : Vec3{};
+}
 
 }  // namespace ase::math

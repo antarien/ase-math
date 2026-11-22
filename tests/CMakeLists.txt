@@ -4,8 +4,9 @@ Licensed to ANTARES SIMULACAO LTDA. Use is governed by LICENSE.md and PJV.md in 
 SPDX-License-Identifier: LicenseRef-ASE-LIC
 
 usecase:101396 - assure engine component quality, actor Engine Unit Test (ENGUTEST).
-The acceptance of step T.1 of PLAN_ASE_VIVARIUM_TREEGEN: perlin3, fbm3_vec, hermite,
-segment_distance_squared, douglas_peucker and mul.
+The acceptance of step T.1 of PLAN_ASE_VIVARIUM_TREEGEN: perlin3, fbm3_vec, hermite and mul. The
+knot selection per detail level is graphics and is tested by its owner, ase-render-data
+(tests/test_render_data_cyl.cpp, register P0714).
 
 THIS FILE WAS REMOVED BY 50efcf9 (2026-09-16) AND STANDS AGAIN ON PURPOSE. That commit took the
 hex grid arithmetic out of ase-math - a grid belongs to ase-gis - and with it hexgrid_test.cpp,

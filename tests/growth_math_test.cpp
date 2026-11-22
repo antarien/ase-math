@@ -2,18 +2,17 @@
  * ASE MATH - Growth Geometry Unit Tests
  *
  * @file        growth_math_test.cpp
- * @brief       Cases for the three-dimensional noise, the Hermite segment, the chain simplification
- *              and the componentwise product.
+ * @brief       Cases for the three-dimensional noise, the Hermite segment and the componentwise
+ *              product.
  * @description The acceptance of step T.1 of PLAN_ASE_VIVARIUM_TREEGEN: the functions a growing
- *              plant reads to bend its axes (perlin3, fbm3_vec), to draw the curve between two
- *              nodes (hermite) and to thin an axis for its coarse levels (douglas_peucker,
- *              segment_distance_squared), plus mul.
+ *              plant reads to bend its axes (perlin3, fbm3_vec) and to draw the curve between two
+ *              nodes (hermite), plus mul. The knot selection per detail level is graphics; its
+ *              owner ase-render-data tests it in tests/test_render_data_cyl.cpp (register P0714).
  *
  *              perlin3: exactly 0 on every lattice point, within plus or minus NOISE3_BOUND
  *              everywhere, a mean near 0 over many cells, continuous across cell borders, and not
  *              constant. fbm3_vec: the zero vector without octaves, three channels that differ.
- *              hermite: both end points exact, both tangents met. douglas_peucker: a chain on one
- *              line keeps its two ends, a bent chain keeps its bend, the ends are always kept.
+ *              hermite: both end points exact, both tangents met.
  *
  *              DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN is set by the build (tests/CMakeLists.txt,
  *              target_compile_definitions on the target ase-math-test).
@@ -33,7 +32,6 @@
  */
 
 #include <doctest/doctest.h>
-#include <ase/math/geometry.hpp>
 #include <ase/math/interpolation.hpp>
 #include <ase/math/perlin.hpp>
 #include <ase/math/vec3.hpp>
@@ -142,49 +140,6 @@ TEST_CASE("hermite - end points exact, tangents met") {
     const Vec3 d1 = (end - hermite(p0, m0, p1, m1, 1.0f - h)) / h;
     CHECK(d1.x == doctest::Approx(m1.x).epsilon(0.01));
     CHECK(d1.z == doctest::Approx(m1.z).epsilon(0.01));
-}
-
-TEST_CASE("segment_distance_squared - interior, beyond the ends, degenerate") {
-    const Vec3 a{0.0f, 0.0f, 0.0f};
-    const Vec3 b{2.0f, 0.0f, 0.0f};
-    CHECK(segment_distance_squared(Vec3{1.0f, 3.0f, 0.0f}, a, b) == 9.0f);
-    CHECK(segment_distance_squared(Vec3{5.0f, 0.0f, 0.0f}, a, b) == 9.0f);
-    CHECK(segment_distance_squared(Vec3{-1.0f, 0.0f, 0.0f}, a, b) == 1.0f);
-    CHECK(segment_distance_squared(Vec3{0.0f, 4.0f, 0.0f}, a, a) == 16.0f);
-}
-
-TEST_CASE("douglas_peucker - straight, bent and degenerate chains") {
-    SUBCASE("A chain on one line keeps exactly its two ends") {
-        Vec3 chain[10];
-        bool keep[10];
-        for (int i = 0; i < 10; ++i) chain[i] = Vec3{0.0f, 0.0f, static_cast<float>(i) * 0.5f};
-        CHECK(douglas_peucker(chain, 10, 0.01f, keep) == 2);
-        CHECK(keep[0]);
-        CHECK(keep[9]);
-        for (int i = 1; i < 9; ++i) CHECK_FALSE(keep[i]);
-    }
-
-    SUBCASE("A bend beyond the tolerance stays, below it falls away") {
-        Vec3 chain[5] = {
-            Vec3{0.0f, 0.0f, 0.0f}, Vec3{0.0f, 0.0f, 1.0f}, Vec3{1.0f, 0.0f, 2.0f},
-            Vec3{2.0f, 0.0f, 2.0f}, Vec3{3.0f, 0.0f, 2.0f}};
-        bool keep[5];
-        // Node 2 lies 1.11 from the chord 0-4 and stays; node 1 lies 0.45 from the chord 0-2 and
-        // node 3 lies on the chord 2-4, so both fall below a tolerance of 0.5
-        CHECK(douglas_peucker(chain, 5, 0.5f, keep) == 3);
-        CHECK(keep[0]);
-        CHECK(keep[2]);
-        CHECK(keep[4]);
-        CHECK(douglas_peucker(chain, 5, 10.0f, keep) == 2);
-    }
-
-    SUBCASE("Empty and single-node chains") {
-        Vec3 chain[1] = {Vec3{1.0f, 2.0f, 3.0f}};
-        bool keep[1] = {false};
-        CHECK(douglas_peucker(chain, 0, 0.1f, keep) == 0);
-        CHECK(douglas_peucker(chain, 1, 0.1f, keep) == 1);
-        CHECK(keep[0]);
-    }
 }
 
 TEST_CASE("mul - componentwise product") {

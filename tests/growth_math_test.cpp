@@ -11,7 +11,9 @@
  *
  *              perlin3: exactly 0 on every lattice point, within plus or minus NOISE3_BOUND
  *              everywhere, a mean near 0 over many cells, continuous across cell borders, and not
- *              constant. fbm3_vec: the zero vector without octaves, three channels that differ.
+ *              constant, and at six fixed points the float32 value of the step-by-step reference, so
+ *              Linux and Android show the same bits. fbm3_vec: the zero vector without octaves, three
+ *              channels that differ.
  *              hermite: both end points exact, both tangents met.
  *
  *              DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN is set by the build (tests/CMakeLists.txt,
@@ -23,8 +25,8 @@
  * @usecase     usecase:101396 - assure engine component quality
  * @actor       Engine Unit Test (ENGUTEST)
  * @created     2026-11-19
- * @modified    2026-11-19
- * @version     00.00.26.00026 [init]
+ * @modified    2026-11-23
+ * @version     00.00.26.00027 [feat]
  *
  * Copyright (c) Jan Ohlmann. All rights reserved.
  * Licensed to ANTARES SIMULACAO LTDA. Use is governed by LICENSE.md and PJV.md in this repository.
@@ -94,6 +96,22 @@ TEST_CASE("perlin3 - the same point yields the same value") {
     const Vec3 p{12.345f, -6.789f, 0.5f};
     CHECK(perlin3(p) == perlin3(p));
     CHECK(perlin3(p) != perlin3(p + Vec3{0.25f, 0.0f, 0.0f}));
+}
+
+TEST_CASE("perlin3 - the same bits on every device") {
+    // The references are IEEE-754 single precision, computed step by step in the order of perlin.hpp
+    // (data/probes/t1_noise_bits_1123.py, run data/probes/runs/t1_noise_bits_1123.txt). Both builds compile with
+    // -ffp-contract=off, so no multiply-add is fused and every step rounds alone; exact equality to the hex literal
+    // on Linux and on Android is the same bit pattern on both. The points are dyadic, so the literal of the point is
+    // the float32 the reference used, and a negative coordinate covers floor and the two's complement corner hash.
+    CHECK(detail::noise3_corner(0, 0, 0) == 0x435416F0u);
+    CHECK(detail::noise3_corner(-1, 2, -3) == 0x8BAE6F79u);
+    CHECK(perlin3(Vec3{0.375f, 0.625f, 0.125f}) == 0x1.45600cp-2f);
+    CHECK(perlin3(Vec3{3.71875f, -2.40625f, 0.5625f}) == 0x1.0cccp-3f);
+    CHECK(perlin3(Vec3{-7.15625f, 11.84375f, -3.03125f}) == 0x1.28e7d8p-2f);
+    CHECK(perlin3(Vec3{12.34375f, -6.78125f, 0.5f}) == 0x1.abc4cp-4f);
+    CHECK(perlin3(Vec3{100.8125f, 42.1875f, -55.4375f}) == 0x1.ef5f74p-3f);
+    CHECK(perlin3(Vec3{-0.96875f, -0.03125f, 0.90625f}) == 0x1.f7f73cp-5f);
 }
 
 TEST_CASE("fbm3_vec - zero without octaves, three distinct channels") {
